@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Teste • Listagem de Anomalias</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    body {
+      margin: 20px;
+      color: #111;
+      background: #0b0b10;
+    }
+
+    .card {
+      background: #111217;
+      border: 1px solid #20222b;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+    }
+
+    h1 {
+      color: #e5e7eb;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .controls .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 12px;
+      color: #9ca3af;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select,
+    button {
+      padding: 10px;
+      border: 1px solid #2a2d37;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #0f1116;
+      color: #e5e7eb;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    #status {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: #9ca3af;
+      min-height: 1em;
+    }
+
+    #bulkBar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    figure {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+
+    .img-wrap {
+      position: relative;
+      width: 100%;
+      height: 180px;
+      border-radius: 10px;
+      border: 1px solid #2a2d37;
+      background: #0f1116;
+      overflow: hidden;
+    }
+
+    .img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .img-wrap canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    figcaption {
+      font-size: 12px;
+      color: #e5e7eb;
+      word-break: break-all;
+    }
+
+    .meta {
+      color: #9ca3af;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .check {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(17, 18, 23, .85);
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #2a2d37;
+      z-index: 2;
+    }
+
+    .empty {
+      color: #9ca3af;
+      padding: 24px;
+      text-align: center;
+      border: 1px dashed #2a2d37;
+      border-radius: 12px;
+      background: #111217;
+      grid-column: 1 / -1;
+    }
+
+    .ok {
+      color: #34d399;
+    }
+
+    .err {
+      color: #f87171;
+    }
+
+    .btn-danger {
+      background: #3a0d0d;
+      border-color: #5b1111;
+    }
+
+    .btn-warn {
+      background: #26200b;
+      border-color: #5a4c0f;
+    }
+
+    .btn-primary {
+      background: #0d1f3a;
+      border-color: #163a5b;
+    }
+
+    .sep {
+      width: 1px;
+      height: 28px;
+      background: #2a2d37;
+      margin: 0 6px;
+    }
+
+    .pill {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hstack {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .small {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px
+    }
+
+    .badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #2a2d37;
+      color: #9ca3af;
+      text-decoration: none
+    }
+
+    .badge-link {
+      border-color: #374151
+    }
+
+    .pager {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Listagem de imagens de anomalias</h1>
+
+  <div class="card">
+    <div class="controls">
+      <!-- Removidos campos de API Base e JWT -->
+      <div class="row">
+        <div>
+          <label for="po">po (pode ser 0/negativo)</label>
+          <input id="po" type="text" placeholder="4" />
+        </div>
+        <div>
+          <label for="folder">folder</label>
+          <select id="folder">
+            <option value="sem_classificacao">sem_classificacao</option>
+            <option value="anomalias">anomalias</option>
+            <option value="ignoradas">ignoradas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="take">Itens por página (máx. 500)</label>
+          <input id="take" type="number" min="1" max="500" step="1" value="100" />
+        </div>
+        <div class="pager">
+          <div class="hstack">
+            <button id="btnPrev">&larr; Anterior</button>
+            <button id="btnNext">Próxima &rarr;</button>
+          </div>
+          <div id="pageInfo" class="small">—</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="btnListar">Listar imagens</button>
+        <div id="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de ação em lote -->
+  <div id="bulkBar" class="card" style="display:none;">
+    <label><input type="checkbox" id="chkAll"> Selecionar tudo</label>
+    <span class="sep" aria-hidden="true"></span>
+    <label class="pill" title="Mostra/oculta a sobreposição do polígono nas imagens">
+      <input type="checkbox" id="chkPoligonos" checked>
+      Mostrar polígonos
+    </label>
+    <span class="sep" aria-hidden="true"></span>
+
+    <!-- Grupo de classificação (apenas em sem_classificacao) -->
+    <div id="classGroup" class="hstack" style="display:none;">
+      <div class="stack">
+        <label>Preset de classe (opcional)</label>
+        <select id="classPreset">
+          <option value="">— escolher —</option>
+          <option value="0|anomalia">0 • anomalia</option>
+          <option value="1|rasgo">1 • rasgo</option>
+          <option value="2|mancha">2 • mancha</option>
+          <option value="3|furo">3 • furo</option>
+        </select>
+        <div class="small">O preset preenche os campos abaixo, você pode editar.</div>
+      </div>
+
+      <div class="pill">
+        <div>
+          <label for="classIdInput">ID da classe</label>
+          <input id="classIdInput" type="number" placeholder="0" style="width:110px;">
+        </div>
+        <div>
+          <label for="classNameInput">Nome da classe</label>
+          <input id="classNameInput" type="text" placeholder="anomalia" style="width:180px;">
+        </div>
+        <div style="align-self:flex-end;">
+          <button id="btnClassificarSel" class="btn-primary"
+            title="Move para 'anomalias' e mantém as anotações do polígono">
+            Classificar selecionadas
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <span style="flex:1"></span>
+    <button id="btnIgnorarSel" class="btn-warn" title="Move de sem_classificacao → ignoradas e limpa polígono">
+      Ignorar selecionadas
+    </button>
+    <span style="flex:1"></span>
+    <button id="btnExcluirSel" class="btn-danger">Excluir selecionadas</button>
+  </div>
+
+  <div id="grid" style="margin-top:16px;"></div>
+
+  <script>
+    // ====== Configuração fixa da API e autenticação ======
+    const API_BASE = "http://localhost:5000";
+    const TOKEN_ENDPOINT = "/token";
+    const TOKEN_PAYLOAD = { "login": "admin", "senha": "P@ssw0rd", "idCliente": 1000 };
+    const LS_JWT_KEY = "anomalias_jwt_token";
+
+    let inMemoryToken = null;
+
+    function joinUrl(base, path) {
+      if (!path) return base;
+      if (/^https?:\/\//i.test(path)) return path;
+      if (base.endsWith('/') && path.startsWith('/')) return base + path.slice(1);
+      if (!base.endsWith('/') && !path.startsWith('/')) return base + '/' + path;
+      return base + path;
+    }
+
+    async function loginAndGetToken() {
+      const url = joinUrl(API_BASE, TOKEN_ENDPOINT);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(TOKEN_PAYLOAD)
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`Falha ao autenticar (HTTP ${res.status}) — ${txt || res.statusText}`);
+      }
+      // A API pode retornar { token: "..." } ou o token puro. Ajuste se necessário.
+      const data = await res.json().catch(() => null);
+      const token = (data && (data.token || data.message || data.jwt)) || data || "";
+      if (!token || typeof token !== "string") {
+        throw new Error("Resposta de token inválida.");
+      }
+      inMemoryToken = token;
+      try { localStorage.setItem(LS_JWT_KEY, token); } catch { }
+      return token;
+    }
+
+    async function getToken(force = false) {
+      if (!force) {
+        if (inMemoryToken && typeof inMemoryToken === "string") return inMemoryToken;
+        try {
+          const ls = localStorage.getItem(LS_JWT_KEY);
+          if (ls && typeof ls === "string") {
+            inMemoryToken = ls;
+            return inMemoryToken;
+          }
+        } catch { }
+      }
+      // força reautenticação
+      return await loginAndGetToken();
+    }
+
+    async function fetchWithAuth(input, init = {}, tryRefresh = true) {
+      const token = await getToken(false);
+      const headers = new Headers(init.headers || {});
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      if (!headers.has("Content-Type") && (init.method || "GET").toUpperCase() !== "GET") {
+        headers.set("Content-Type", "application/json");
+      }
+      const res = await fetch(input, { ...init, headers });
+
+      if (res.status === 401 && tryRefresh) {
+        // tenta renovar e refazer uma vez
+        const newToken = await getToken(true);
+        const headers2 = new Headers(init.headers || {});
+        if (newToken) headers2.set("Authorization", `Bearer ${newToken}`);
+        if (!headers2.has("Content-Type") && (init.method || "GET").toUpperCase() !== "GET") {
+          headers2.set("Content-Type", "application/json");
+        }
+        return await fetch(input, { ...init, headers: headers2 });
+      }
+      return res;
+    }
+
+    // ====== UI / Estado ======
+    const btn = document.getElementById('btnListar');
+    const grid = document.getElementById('grid');
+    const statusEl = document.getElementById('status');
+    const bulkBar = document.getElementById('bulkBar');
+    const chkAll = document.getElementById('chkAll');
+    const chkPoligonos = document.getElementById('chkPoligonos');
+    const btnIgnorarSel = document.getElementById('btnIgnorarSel');
+    const btnExcluirSel = document.getElementById('btnExcluirSel');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const takeInput = document.getElementById('take');
+    const pageInfo = document.getElementById('pageInfo');
+
+    // Classificação
+    const classGroup = document.getElementById('classGroup');
+    const classPreset = document.getElementById('classPreset');
+    const classIdInput = document.getElementById('classIdInput');
+    const classNameInput = document.getElementById('classNameInput');
+    const btnClassificarSel = document.getElementById('btnClassificarSel');
+
+    // Defaults
+    document.getElementById('po').value = "1";
+
+    const state = {
+      po: "", folder: "sem_classificacao",
+      skip: 0, take: 100, total: 0
+    };
+
+    function setStatus(msg, cls) {
+      statusEl.textContent = msg || "";
+      statusEl.className = cls || "";
+    }
+    function fmtScore(v) { return (v == null) ? "-" : Number(v).toFixed(3); }
+    function fmtConf(v) {
+      if (v == null) return "-";
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "-";
+      // se vier entre 0 e 1, mostra em %
+      if (n >= 0 && n <= 1) return (n * 100).toFixed(1) + "%";
+      // senão, mostra com 3 casas (ex.: já em escala de 0..100)
+      return n.toFixed(3);
+    }
+    function fmtTs(iso) { try { return iso ? new Date(iso).toLocaleString() : "-"; } catch { return "-"; } }
+    function fileNameFromUrl(u) { try { return decodeURIComponent((u || '').split('/').pop() || ''); } catch { return (u || ''); } }
+
+    function toggleBulkButtonsFor(folder) {
+      const canIgnoreOrClassify = folder === 'sem_classificacao';
+      btnIgnorarSel.style.display = canIgnoreOrClassify ? 'inline-block' : 'none';
+      classGroup.style.display = canIgnoreOrClassify ? 'flex' : 'none';
+    }
+
+    classPreset.addEventListener('change', () => {
+      const v = classPreset.value;
+      if (!v) return;
+      const [id, name] = v.split('|');
+      classIdInput.value = id || "";
+      classNameInput.value = name || "";
+    });
+
+    function parsePolygon(poly) {
+      if (!poly) return null;
+      if (typeof poly === 'string') {
+        try { poly = JSON.parse(poly); } catch { return null; }
+      }
+      if (Array.isArray(poly) && poly.length >= 6 && typeof poly[0] === 'number') {
+        const pts = [];
+        for (let i = 0; i + 1 < poly.length; i += 2) {
+          const x = Number(poly[i]), y = Number(poly[i + 1]);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+          pts.push({ x, y });
+        }
+        return pts.length >= 3 ? pts : null;
+      }
+      if (Array.isArray(poly) && Array.isArray(poly[0])) {
+        const pts = [];
+        for (const p of poly) {
+          const x = Number(p[0]), y = Number(p[1]);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+          pts.push({ x, y });
+        }
+        return pts.length >= 3 ? pts : null;
+      }
+      return null;
+    }
+
+    function drawPolygonOnCanvas(canvas, ptsNorm) {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const show = chkPoligonos.checked;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+
+      const dpr = window.devicePixelRatio || 1;
+      const needResize = (canvas.width !== Math.round(w * dpr)) || (canvas.height !== Math.round(h * dpr));
+      if (needResize) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      if (!show || !ptsNorm) return;
+
+      ctx.beginPath();
+      for (let i = 0; i < ptsNorm.length; i++) {
+        const px = Math.max(0, Math.min(1, ptsNorm[i].x)) * w;
+        const py = Math.max(0, Math.min(1, ptsNorm[i].y)) * h;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255, 64, 64, 1)';
+      ctx.stroke();
+    }
+
+    function redrawAllPolys() {
+      const figures = grid.querySelectorAll('figure');
+      figures.forEach(fig => {
+        const wrap = fig.querySelector('.img-wrap');
+        if (!wrap) return;
+        const canvas = wrap.querySelector('canvas');
+        if (!canvas) return;
+        const polyFlat = fig.dataset.poly ? JSON.parse(fig.dataset.poly) : null;
+        const pts = parsePolygon(polyFlat);
+        drawPolygonOnCanvas(canvas, pts);
+      });
+    }
+
+    function updatePagerUI() {
+      const totalPages = Math.max(1, Math.ceil((state.total || 0) / state.take));
+      const currentPage = Math.min(totalPages, Math.floor(state.skip / state.take) + 1);
+      pageInfo.textContent = `Página ${currentPage} de ${totalPages} • Total: ${state.total}`;
+      btnPrev.disabled = (state.skip <= 0);
+      btnNext.disabled = (state.skip + state.take >= state.total);
+    }
+
+    function bindBulkHandlers() {
+      chkAll.onchange = () => {
+        const checks = grid.querySelectorAll('input[type="checkbox"]');
+        checks.forEach(c => c.checked = chkAll.checked);
+      };
+      btnIgnorarSel.onclick = () => ignorarSelecionadas();
+      btnExcluirSel.onclick = () => excluirSelecionadas();
+      btnClassificarSel.onclick = () => classificarSelecionadas();
+      chkPoligonos.onchange = redrawAllPolys;
+      window.addEventListener('resize', redrawAllPolys, { passive: true });
+    }
+
+    function buildFigure(item, idx) {
+      const folder = state.folder;
+      const urlAbs = joinUrl(API_BASE, item.url);
+      const name = item.name || fileNameFromUrl(item.url);
+
+      const figure = document.createElement('figure');
+      figure.dataset.name = name;
+      figure.dataset.index = idx;
+      figure.dataset.poly = JSON.stringify(item.polygon_norm ?? item.polygon ?? null);
+
+      const checkWrap = document.createElement('label');
+      checkWrap.className = "check";
+      const chk = document.createElement('input');
+      chk.type = "checkbox";
+      chk.dataset.name = name;
+      checkWrap.appendChild(chk);
+      figure.appendChild(checkWrap);
+
+      const a = document.createElement('a');
+      a.href = urlAbs; a.target = "_blank"; a.rel = "noopener noreferrer";
+
+      const wrap = document.createElement('div');
+      wrap.className = 'img-wrap';
+
+      const img = document.createElement('img');
+      img.src = urlAbs; img.alt = name; img.loading = "lazy"; img.decoding = "async";
+      img.onerror = () => { img.style.opacity = 0.4; img.title = "Falha ao carregar"; };
+      const canvas = document.createElement('canvas');
+
+      img.addEventListener('load', () => {
+        const polyFlat = figure.dataset.poly ? JSON.parse(figure.dataset.poly) : null;
+        const pts = parsePolygon(polyFlat);
+        drawPolygonOnCanvas(canvas, pts);
+      });
+
+      wrap.appendChild(img);
+      wrap.appendChild(canvas);
+      a.appendChild(wrap);
+      figure.appendChild(a);
+
+      const cap = document.createElement('figcaption');
+      cap.textContent = name;
+      figure.appendChild(cap);
+
+      // meta principal: timestamp + anomalyScore
+      const meta1 = document.createElement('div');
+      meta1.className = "meta";
+      meta1.textContent = `ts: ${fmtTs(item.timestamp)}  •  anomalyScore: ${fmtScore(item.anomalyScore)}`;
+      figure.appendChild(meta1);
+
+      // meta opcional: predição do SVM
+      if ((item.classPred && item.classPred.length) || item.predConf != null) {
+        const meta2 = document.createElement('div');
+        meta2.className = "meta";
+        const cls = (item.classPred && item.classPred.length) ? item.classPred : "—";
+        meta2.textContent = `SVM: ${cls}  •  conf: ${fmtConf(item.predConf)}`;
+        figure.appendChild(meta2);
+      }
+
+      // badges
+      const badges = document.createElement('div');
+      badges.className = 'badges';
+
+      // badge de classe efetiva (apenas na pasta anomalias)
+      if (folder === 'anomalias' && item.className) {
+        const b = document.createElement('span');
+        b.className = 'badge';
+        b.textContent = `${item.className}${item.classId != null ? ` (#${item.classId})` : ''}`;
+        badges.appendChild(b);
+      }
+
+      if (badges.children.length > 0) figure.appendChild(badges);
+
+      return figure;
+    }
+
+
+    async function fetchPage({ reset }) {
+      const { po, folder } = state;
+      const url = joinUrl(API_BASE,
+        `/anomalias/list?po=${encodeURIComponent(po)}&folder=${encodeURIComponent(folder)}&skip=${state.skip}&take=${state.take}`
+      );
+
+      if (reset) {
+        btn.disabled = true;
+        setStatus("Carregando...");
+        grid.innerHTML = "";
+        bulkBar.style.display = "none";
+        chkAll.checked = false;
+      }
+
+      try {
+        const res = await fetchWithAuth(url, { method: "GET" });
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status} - ${txt || res.statusText}`);
+        }
+
+        const items = await res.json();
+        const totalHeader = res.headers.get('X-Total-Count');
+        state.total = totalHeader ? (parseInt(totalHeader, 10) || (Array.isArray(items) ? items.length : 0)) : (Array.isArray(items) ? items.length : 0);
+
+        if (!Array.isArray(items) || items.length === 0) {
+          grid.innerHTML = `<div class="empty">Nenhuma imagem encontrada para po=${po} / folder=${folder}</div>`;
+          setStatus("");
+          updatePagerUI();
+          return;
+        }
+
+        toggleBulkButtonsFor(folder);
+        bulkBar.style.display = "flex";
+
+        const frag = document.createDocumentFragment();
+        items.forEach((item, idx) => frag.appendChild(buildFigure(item, idx)));
+        grid.innerHTML = "";
+        grid.appendChild(frag);
+
+        setStatus(`Exibindo ${items.length} de ${state.total}`);
+        updatePagerUI();
+        redrawAllPolys();
+        bindBulkHandlers();
+      } catch (err) {
+        console.error(err);
+        grid.innerHTML = `<div class="empty">Erro ao listar/carregar imagens.<br>${String(err.message || err)}</div>`;
+        setStatus("");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function listar() {
+      state.po = document.getElementById('po').value.trim();
+      state.folder = document.getElementById('folder').value;
+      state.take = Math.max(1, Math.min(500, parseInt(takeInput.value, 10) || 100));
+      state.skip = 0;
+
+      if (!state.po.length) { alert("Preencha o po."); return; }
+
+      // Garante que temos token antes de começar
+      try {
+        await getToken(false);
+      } catch (e) {
+        setStatus(`Erro de autenticação: ${String(e.message || e)}`, "err");
+        return;
+      }
+
+      await fetchPage({ reset: true });
+    }
+
+    // ====== Ações em lote ======
+    async function ignorarSelecionadas() {
+      if (state.folder !== 'sem_classificacao') {
+        alert('Ação disponível apenas para a pasta "sem_classificacao".');
+        return;
+      }
+      const checks = Array.from(grid.querySelectorAll('input[type="checkbox"]:checked'));
+      if (checks.length === 0) { alert("Selecione ao menos uma imagem."); return; }
+
+      const selectedNames = checks.map(c => c.dataset.name);
+      const ignoreUrl = joinUrl(API_BASE, `/anomalias/ignore?po=${encodeURIComponent(state.po)}`);
+
+      try {
+        btnIgnorarSel.disabled = true;
+        setStatus("Marcando como ignoradas...");
+
+        const res = await fetchWithAuth(ignoreUrl, {
+          method: "POST",
+          body: JSON.stringify(selectedNames)
+        });
+
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status} - ${txt || res.statusText}`);
+        }
+        const data = await res.json();
+        setStatus(`Ignoradas: ${data.moved} • Não encontradas: ${data.notFound} • Não estavam em sem_classificacao: ${data.notInSemClassificacao} • Erros: ${data.errors}`, data.errors ? "err" : "ok");
+
+        await fetchPage({ reset: false });
+      } catch (err) {
+        console.error(err);
+        setStatus(`Erro ao ignorar: ${String(err.message || err)}`, "err");
+      } finally {
+        btnIgnorarSel.disabled = false;
+      }
+    }
+
+    async function classificarSelecionadas() {
+      if (state.folder !== 'sem_classificacao') {
+        alert('Ação disponível apenas para a pasta "sem_classificacao".');
+        return;
+      }
+
+      const checks = Array.from(grid.querySelectorAll('input[type="checkbox"]:checked'));
+      if (checks.length === 0) { alert("Selecione ao menos uma imagem."); return; }
+
+      const classId = parseInt(classIdInput.value, 10);
+      const className = (classNameInput.value || "").trim();
+
+      if (!Number.isFinite(classId)) { alert("Informe um ID de classe válido."); return; }
+      if (!className.length) { alert("Informe um nome de classe."); return; }
+
+      const names = checks.map(c => c.dataset.name);
+      const classifyUrl = joinUrl(API_BASE, `/anomalias/classify?po=${encodeURIComponent(state.po)}`);
+      const payload = { names, classId, className };
+
+      try {
+        btnClassificarSel.disabled = true;
+        setStatus("Classificando (movendo e anotando)...");
+
+        const res = await fetchWithAuth(classifyUrl, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status} - ${txt || res.statusText}`);
+        }
+        const data = await res.json();
+
+        setStatus(
+          `Classificadas: ${data.moved} • Não encontradas: ${data.notFound} • ` +
+          `Não estavam em sem_classificacao: ${data.notInSemClassificacao} • Erros: ${data.errors}`,
+          data.errors ? "err" : "ok"
+        );
+
+        const details = (data.items || []).map(it => {
+          const err = it.error ? ` — <span class="err">${String(it.error)}</span>` : '';
+          return `<div class="small">• <strong>${it.name || '(sem nome)'}</strong> → <code>${it.status}</code>${err}</div>`;
+        }).join("");
+        if (details) {
+          let panel = document.getElementById('detailsPanel');
+          if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'detailsPanel';
+            panel.className = 'card';
+            panel.style.marginTop = '12px';
+            grid.parentNode.insertBefore(panel, grid);
+          }
+          panel.innerHTML = `<div style="color:#e5e7eb; margin-bottom:8px;">Detalhes da última operação</div>${details}`;
+        }
+
+        await fetchPage({ reset: false });
+      } catch (err) {
+        console.error(err);
+        setStatus(`Erro ao classificar: ${String(err.message || err)}`, "err");
+      } finally {
+        btnClassificarSel.disabled = false;
+      }
+    }
+
+    async function excluirSelecionadas() {
+      const checks = Array.from(grid.querySelectorAll('input[type="checkbox"]:checked'));
+      if (checks.length === 0) { alert("Selecione ao menos uma imagem."); return; }
+
+      const selectedNames = checks.map(c => c.dataset.name);
+      if (!confirm(`Tem certeza que deseja excluir ${selectedNames.length} imagem(ns) de "${state.folder}"? Esta ação não pode ser desfeita.`)) {
+        return;
+      }
+
+      const delUrl = joinUrl(API_BASE, `/anomalias/delete?po=${encodeURIComponent(state.po)}&folder=${encodeURIComponent(state.folder)}`);
+
+      try {
+        btnExcluirSel.disabled = true;
+        setStatus("Excluindo selecionadas...");
+
+        const res = await fetchWithAuth(delUrl, {
+          method: "POST",
+          body: JSON.stringify(selectedNames)
+        });
+
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status} - ${txt || res.statusText}`);
+        }
+        const data = await res.json();
+        setStatus(`Excluídas: ${data.deleted} • Não encontradas: ${data.notFound} • Erros: ${data.errors}`, data.errors ? "err" : "ok");
+
+        await fetchPage({ reset: false });
+      } catch (err) {
+        console.error(err);
+        setStatus(`Erro ao excluir: ${String(err.message || err)}`, "err");
+      } finally {
+        btnExcluirSel.disabled = false;
+      }
+    }
+
+    // ====== Bind básicos ======
+    document.getElementById('btnListar').addEventListener('click', listar);
+    document.getElementById('folder').addEventListener('change', () => setTimeout(redrawAllPolys, 0));
+    btnPrev.addEventListener('click', async () => {
+      if (state.skip <= 0) return;
+      state.skip = Math.max(0, state.skip - state.take);
+      await fetchPage({ reset: true });
+    });
+    btnNext.addEventListener('click', async () => {
+      if (state.skip + state.take >= state.total) return;
+      state.skip = state.skip + state.take;
+      await fetchPage({ reset: true });
+    });
+    takeInput.addEventListener('change', async () => {
+      state.take = Math.max(1, Math.min(500, parseInt(takeInput.value, 10) || 100));
+      state.skip = 0;
+      await fetchPage({ reset: true });
+    });
+
+    // Opcional: tentar obter token na carga inicial para já deixar pronto
+    (async () => {
+      try { await getToken(false); } catch (e) { /* Mostramos o erro só se o usuário tentar listar */ }
+    })();
+  </script>
+</body>
+
+</html>

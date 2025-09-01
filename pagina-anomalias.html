@@ -1,0 +1,1442 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Anomalias</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root {
+            --overlay-max-w: 96vw;
+            --overlay-max-h: 92vh;
+            --panelW: clamp(260px, 28vw, 320px);
+            --stackPanelH: clamp(180px, 34vh, 280px);
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none;
+            font-family: "Open Sans", sans-serif;
+            -webkit-tap-highlight-color: transparent
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .fade-in {
+            animation: fade .2s ease-in-out both;
+        }
+
+        .fade-out {
+            animation: fade .2s ease-in-out reverse both;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: clip;
+            color: #111;
+            background: #fff
+        }
+
+        #page {
+            height: 100svh;
+            overflow: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none
+        }
+
+        #page::-webkit-scrollbar {
+            display: none
+        }
+
+        body:has(#overlay:not([hidden]), #confirmOverlay:not([hidden]), #classifyOverlay:not([hidden])) #page {
+            overflow: clip
+        }
+
+        #folderTabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 20px 0 0
+        }
+
+        .tab {
+            appearance: none;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #111827;
+            border-radius: 9999px;
+            padding: 8px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: .4s;
+        }
+
+        .tab[aria-selected="true"] {
+            background: #111827;
+            color: #fff;
+            border-color: #111827
+        }
+
+        .tab:disabled {
+            opacity: .6;
+            pointer-events: none
+        }
+
+        @media (max-width:560px) {
+            #folderTabs {
+                overflow: auto;
+                padding-bottom: 2px
+            }
+        }
+
+        #header {
+            margin: 20px 0
+        }
+
+        .header-layer {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            flex-wrap: wrap
+        }
+
+        .header-layer:not([hidden]) {
+            display: flex
+        }
+
+        #pagerBar {
+            padding: 13px;
+            animation: fade .2s ease-in-out both;
+        }
+
+        #pagerBar button {
+            background: none;
+            border: none;
+            width: 40px;
+            font-size: 40px;
+            line-height: 1;
+            font-weight: bolder;
+            cursor: pointer;
+            flex: 0 0 auto
+        }
+
+        #pagerBar button[disabled] {
+            cursor: default;
+            opacity: .8
+        }
+
+        #info {
+            font-size: 16px;
+            opacity: .9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90cqi
+        }
+
+        #selectionBar {
+            width: 100%;
+            margin: 0 auto;
+            background: transparent;
+            border: none;
+            animation: fade .2s ease-in-out both;
+        }
+
+        #selectionBar:not([hidden]) {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px
+        }
+
+        @media (max-width:620px) {
+            #selectionBar:not([hidden]) {
+                grid-template-columns: 1fr;
+                row-gap: 8px
+            }
+
+            #selActions {
+                justify-self: end;
+                width: 100%
+            }
+
+            .btn {
+                min-width: 0
+            }
+        }
+
+        @media (max-width:380px) {
+            #selActions {
+                width: 100%
+            }
+
+            .btn {
+                width: 100%
+            }
+        }
+
+        #selLeft {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 28px;
+            flex-wrap: wrap;
+            justify-self: start;
+            min-width: 0
+        }
+
+        #selCountBadge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #111827;
+            color: #fff;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 13px;
+            line-height: 1
+        }
+
+        #selCountBadge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981
+        }
+
+        #btnClearSel {
+            color: #4b5563;
+            text-decoration: none;
+            font-size: 13px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            cursor: pointer
+        }
+
+        #btnClearSel:hover {
+            background: #eef2f7;
+            color: #111827
+        }
+
+        #selActions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-self: end;
+            flex-wrap: wrap;
+            max-width: 100%
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #111827;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: transform .02s, background .15s, border-color .15s, box-shadow .15s;
+            min-width: 140px
+        }
+
+        .btn:hover {
+            background: #f3f4f6;
+            border-color: #cbd5e1
+        }
+
+        .btn[disabled] {
+            opacity: .6;
+            pointer-events: none
+        }
+
+        .btnPrimary {
+            background: #428bca;
+            color: #fff;
+            border-color: #357ebd
+        }
+
+        .btnPrimary:hover {
+            background: #3379b5;
+            border-color: #2a6496
+        }
+
+        .btnPrimary:active {
+            background: #2d6ca2;
+            border-color: #2a6496
+        }
+
+        .btnCancel {
+            color: #fff;
+            background: #f3565d;
+            border-color: #f13e46
+        }
+
+        .btnCancel:hover {
+            background: #f1353d;
+            border-color: #ec111b
+        }
+
+        .btnCancel:active {
+            background: #ef1d26;
+            border-color: #ec111b
+        }
+
+        .btnConfirm {
+            color: #fff;
+            background: #45b6af;
+            border-color: #3ea49d
+        }
+
+        .btnConfirm:hover {
+            background: #3b9c96;
+            border-color: #307f7a
+        }
+
+        .btnConfirm:active {
+            background: #348a84;
+            border-color: #307f7a
+        }
+
+        #grid {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(180px, calc(100cqi / 6), 300px), 1fr));
+            justify-items: center;
+        }
+
+        #grid .item {
+            position: relative;
+            width: 100%;
+            border-radius: 6px
+        }
+
+        #grid img.thumb {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 6px;
+            cursor: pointer;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent
+        }
+
+        html.is-hover:not(.has-selection) #grid img.thumb:active,
+        html.is-touch:not(.has-selection) #grid img.thumb:active {
+            transform: scale(0.98);
+            transition: transform .15s;
+            transform-origin: center
+        }
+
+        #grid .item:active .sel {
+            opacity: 1 !important;
+            pointer-events: auto !important
+        }
+
+        html.is-hover .item .sel {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s
+        }
+
+        html.is-hover .item:hover .sel,
+        html.is-hover .item[data-selected="true"] .sel,
+        html.is-hover .item:focus-within .sel {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        html.is-touch .item .sel {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s
+        }
+
+        html.is-touch .item[data-selected="true"] .sel {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        html.has-selection .item .sel {
+            opacity: 1 !important;
+            pointer-events: auto !important
+        }
+
+        .item .sel {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 28px;
+            height: 28px;
+            appearance: none;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, .35);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            outline: none
+        }
+
+        .item .sel::after {
+            content: '✔';
+            font-size: 16px;
+            color: #fff;
+            opacity: 0;
+            transform: translateY(-1px)
+        }
+
+        .item .sel:checked::after {
+            opacity: 1
+        }
+
+        .item[data-selected="true"]::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            background: rgba(59, 130, 246, .05);
+            pointer-events: none
+        }
+
+        #overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1600;
+            background: rgba(0, 0, 0, .6);
+            padding: 2vh 2vw;
+            overflow: auto;
+            overscroll-behavior: contain;
+        }
+
+        #overlay:not([hidden]) {
+            display: flex
+        }
+
+        #card {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            max-width: var(--overlay-max-w);
+            max-height: 92svh;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+            background: #f3f4f6;
+        }
+
+        #stage {
+            position: relative;
+            display: inline-block;
+            align-self: center;
+            background: transparent
+        }
+
+
+        #overlayImg {
+            display: block;
+            width: auto;
+            height: auto;
+            max-height: 92svh;
+            max-width: calc(var(--overlay-max-w) - var(--panelW));
+        }
+
+        #polyOverlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: none
+        }
+
+        #polyOverlay.active {
+            display: block
+        }
+
+        #polyOverlay svg {
+            width: 100%;
+            height: 100%;
+            display: block
+        }
+
+        #polyOverlay polygon {
+            stroke: #f3565d;
+            stroke-width: 0.005;
+            fill: none
+        }
+
+        #sidePanel {
+            width: var(--panelW);
+            min-width: 260px;
+            max-width: 320px;
+            padding: 12px;
+            background: #f3f4f6;
+            border-left: 1px solid #e5e7eb;
+            container-type: inline-size;
+        }
+
+        #btnClose {
+            color: #111;
+            background: transparent;
+            font-size: 22px;
+            width: 34px;
+            height: 34px;
+            line-height: 1;
+            border: none;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            outline: none;
+        }
+
+        #spTools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        #togglePoly {
+            appearance: none;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #111827;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer
+        }
+
+        #togglePoly[aria-pressed="true"] {
+            background: #111827;
+            color: #fff;
+            border-color: #111827
+        }
+
+        #spMeta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px
+        }
+
+        #spHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        #classLine {
+            display: none
+        }
+
+        #updatedLine {
+            display: none
+        }
+
+        #updatedLine[data-visible="true"] {
+            display: block
+        }
+
+        #classLine[data-visible="true"] {
+            display: block
+        }
+
+        @media (min-width:900px) {
+            #sidePanel {
+                align-self: stretch;
+                display: grid;
+                grid-template-rows: auto 1fr auto;
+                gap: 10px;
+                overflow: auto;
+            }
+
+            #spHeader {
+                position: sticky;
+                top: 0;
+                z-index: 1;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding-bottom: 6px;
+                background: #f3f4f6;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            #spMiddle {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                min-height: 0;
+                overflow: auto;
+            }
+
+            #spActions {
+                position: sticky;
+                bottom: 0;
+                z-index: 1;
+                background: #f3f4f6;
+                border-top: 1px solid #e5e7eb;
+                padding-top: 6px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            #spActions .btn {
+                min-width: 0;
+                width: 100%
+            }
+        }
+
+        @media (max-width:900px) {
+            #card {
+                flex-direction: column;
+                align-items: stretch
+            }
+
+            #stage {
+                align-self: center
+            }
+
+            #overlayImg {
+                max-width: var(--overlay-max-w);
+                max-height: calc(var(--overlay-max-h) - var(--stackPanelH))
+            }
+
+            #sidePanel {
+                width: 100%;
+                min-width: 0;
+                max-width: none;
+                border-left: none;
+                border-top: 1px solid #e5e7eb;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                overflow: auto;
+            }
+
+            #spHeader,
+            #spActions {
+                position: static;
+                background: transparent;
+                border: 0;
+                padding: 0;
+            }
+
+            #spMiddle {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                /* mesmo espaçamento do desktop */
+                overflow: visible;
+                /* preserva o comportamento atual */
+            }
+
+            #spActions {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 8px
+            }
+        }
+
+        @container (max-width:520px) {
+            #spActions {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-height:400px) {
+            #overlay {
+                padding: 8px
+            }
+
+            #overlayImg {
+                max-height: 60svh
+            }
+
+            /* NOVO: em altura baixa, rola o painel inteiro (inclusive no layout lateral) */
+            #sidePanel {
+                overflow: auto;
+            }
+
+            #spMiddle {
+                overflow: visible;
+                min-height: auto;
+            }
+
+            /* Desfaz o sticky do header/ações para acompanhar o scroll do painel */
+            #spHeader,
+            #spActions {
+                position: static;
+                background: transparent;
+                border: 0;
+                padding: 0;
+            }
+        }
+
+        #confirmOverlay,
+        #classifyOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2200;
+            padding: max(2vh, env(safe-area-inset-top)) max(2vw, env(safe-area-inset-right)) max(2vh, env(safe-area-inset-bottom)) max(2vw, env(safe-area-inset-left))
+        }
+
+        #confirmOverlay:not([hidden]),
+        #classifyOverlay:not([hidden]) {
+            display: flex
+        }
+
+        #confirmCard,
+        #classifyCard {
+            width: min(520px, 96vw);
+            max-height: 86vh;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #fff;
+            color: #111;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+            padding: 20px;
+        }
+
+        #confirmTitle,
+        #classifyTitle {
+            font-size: clamp(16px, 2.4cqi, 20px);
+            font-weight: 700;
+            margin: 6px 0 10px
+        }
+
+        #confirmMsg,
+        #classifyMsg,
+        #confirmProgress,
+        #classifyProgress {
+            font-size: clamp(13px, 2.2cqi, 15px);
+            line-height: 1.5;
+            opacity: .9
+        }
+
+        #confirmProgress,
+        #classifyProgress {
+            white-space: pre-line;
+            word-wrap: break-word;
+            margin-top: 4px;
+            display: none
+        }
+
+        #confirmProgress:not([hidden]),
+        #classifyProgress:not([hidden]) {
+            display: block
+        }
+
+        #confirmActions,
+        #classifyActions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 4px;
+            flex-wrap: wrap
+        }
+
+        @media (max-width:420px) {
+
+            #confirmActions .btn,
+            #classifyActions .btn {
+                flex: 1 1 100%;
+                min-width: 0
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="page">
+        <main id="appMain" tabindex="-1"></main>
+
+        <div id="folderTabs" aria-label="Pastas">
+            <button class="tab" id="tabSem" data-folder="sem_classificacao" aria-selected="true">Sem
+                Classificação</button>
+            <button class="tab" id="tabAno" data-folder="anomalias" aria-selected="false">Anomalias</button>
+            <button class="tab" id="tabIgn" data-folder="ignoradas" aria-selected="false">Ignoradas</button>
+        </div>
+
+        <div id="header">
+            <div id="pagerBar" class="header-layer">
+                <button id="btnPrev" aria-label="Página anterior">‹</button>
+                <span id="info">0 Imagens&nbsp;&nbsp;—&nbsp;&nbsp;Página 1 de 1</span>
+                <button id="btnNext" aria-label="Próxima página">›</button>
+            </div>
+
+            <div id="selectionBar" class="header-layer" hidden inert>
+                <div id="selLeft">
+                    <span id="selCountBadge" aria-live="polite">
+                        <span class="dot" aria-hidden="true"></span>
+                        <span id="selCountText">0 selecionadas</span>
+                    </span>
+                    <a id="btnClearSel" role="button" tabindex="0">Limpar</a>
+                </div>
+                <div id="selActions">
+                    <button id="btnClassificar" class="btn btnPrimary" type="button">Classificar selecionadas</button>
+                    <button id="btnIgnorar" class="btn btnCancel" type="button">Ignorar selecionadas</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="grid"></div>
+    </div>
+    <div id="overlay" role="dialog" aria-modal="true" hidden inert>
+        <div id="card">
+            <div id="stage">
+                <img id="overlayImg" alt="" draggable="false" />
+                <div id="polyOverlay">
+                    <svg viewBox="0 0 1 1" preserveAspectRatio="none">
+                        <polygon id="polyShape" points=""></polygon>
+                    </svg>
+                </div>
+            </div>
+
+            <aside id="sidePanel" role="group" aria-label="Informações da imagem">
+                <div id="spHeader">
+                    <div class="small" style="font-weight:700">Detalhes da imagem</div>
+                    <button id="btnClose" aria-label="Fechar">✕</button>
+                </div>
+
+                <div id="spMiddle">
+                    <div id="spMeta">
+                        <div class="small">
+                            <span aria-hidden="true">Capturada: </span>
+                            <time id="imgTimestamp" datetime=""></time>
+                        </div>
+
+                        <div id="updatedLine" class="small">
+                            <span aria-hidden="true">Classificada: </span>
+                            <time id="imgUpdated" datetime=""></time>
+                        </div>
+
+                        <div id="classLine" class="small">
+                            <span aria-hidden="true">🏷️</span>
+                            <span id="imgClass"></span>
+                        </div>
+                    </div>
+
+                    <div id="spTools">
+                        <button id="togglePoly" aria-pressed="false" aria-label="Mostrar contorno" hidden>Mostrar
+                            contorno</button>
+                    </div>
+                </div>
+
+                <div id="spActions">
+                    <button id="btnModalClassificar" class="btn btnPrimary" type="button" hidden>Classificar</button>
+                    <button id="btnModalIgnorar" class="btn btnCancel" type="button" hidden>Ignorar</button>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <div id="confirmOverlay" role="dialog" aria-modal="true" hidden inert>
+        <div id="confirmCard" role="document">
+            <div id="confirmTitle">Ignorar imagens selecionadas?</div>
+            <div id="confirmMsg">Tem certeza de que deseja ignorar <strong id="confirmCount">0</strong> imagem(ns)?
+            </div>
+            <div id="confirmProgress" hidden></div>
+            <div id="confirmActions">
+                <button id="btnCancelIgnore" class="btn btnCancel" type="button">Cancelar</button>
+                <button id="btnConfirmIgnore" class="btn btnConfirm" type="button">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="classifyOverlay" role="dialog" aria-modal="true" hidden inert>
+        <div id="classifyCard" role="document">
+            <div id="classifyTitle">Classificar imagens selecionadas</div>
+            <div id="classifyMsg">Selecione a anomalia a atribuir para as imagens selecionadas:</div>
+            <div class="field">
+                <label for="classSelect" class="label">Anomalia</label>
+                <select id="classSelect" class="select">
+                    <option value="2" data-name="mancha" selected>2 — mancha</option>
+                </select>
+            </div>
+            <div id="classifyProgress" hidden></div>
+            <div id="classifyActions">
+                <button id="btnCancelClassify" class="btn btnCancel" type="button">Cancelar</button>
+                <button id="btnConfirmClassify" class="btn btnConfirm" type="button">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TAKE = 24;
+        const API = "http://localhost:5000";
+        const POLL_MS = 5000;
+        const TZ = 'America/Sao_Paulo';
+
+
+        const IS_TOUCH = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        document.documentElement.classList.toggle('is-touch', IS_TOUCH);
+        document.documentElement.classList.toggle('is-hover', !IS_TOUCH);
+
+        let posto = null, token = null;
+        let total = 0, totalPg = 1, pageIndex = 0, loading = false;
+        let currentFolder = 'sem_classificacao';
+        let selectionEnabled = true;
+        let modalArmAt = 0;
+
+        const selectedIds = new Set();
+
+        let currentModalItem = null;
+        let lastFocusBeforeModal = null;
+        function polyPrefKey() { return `modalPoly_${currentFolder}`; }
+        function getPolyPref() { try { return localStorage.getItem(polyPrefKey()) === '1'; } catch { return false; } }
+        function setPolyPref(v) { try { localStorage.setItem(polyPrefKey(), v ? '1' : '0'); } catch { } }
+
+        function containsFocus(el) { return el && el.contains(document.activeElement); }
+        function focusSafe(target = document.getElementById('appMain')) { if (target) target.focus({ preventScroll: true }); }
+        function showSection(el, { focus = null } = {}) { if (!el) return; el.removeAttribute('hidden'); el.inert = false; if (focus instanceof HTMLElement) focusSafe(focus); }
+        function hideSection(el, { focusFallback = null } = {}) { if (!el) return; if (containsFocus(el)) focusSafe(focusFallback); el.inert = true; el.setAttribute('hidden', ''); }
+
+        function syncHeaderSelectionUI() {
+            const hasSel = selectionEnabled && selectedIds.size > 0;
+            document.documentElement.classList.toggle('has-selection', hasSel);
+            const pager = document.getElementById('pagerBar');
+            const selBar = document.getElementById('selectionBar');
+            const btnClear = document.getElementById('btnClearSel');
+            if (hasSel) { hideSection(pager, { focusFallback: btnClear }); showSection(selBar, { focus: btnClear }); }
+            else { hideSection(selBar, { focusFallback: document.getElementById('appMain') }); showSection(pager, { focus: document.getElementById('btnPrev') || document.getElementById('appMain') }); }
+            document.getElementById('selCountText').textContent = `${selectedIds.size} selecionada${selectedIds.size === 1 ? '' : 's'}`;
+        }
+        function setItemSelected(id, elItem, checked) {
+            if (!selectionEnabled) return;
+            if (checked) selectedIds.add(id); else selectedIds.delete(id);
+            elItem.dataset.selected = checked ? 'true' : 'false';
+            elItem.setAttribute('aria-selected', elItem.dataset.selected);
+            syncHeaderSelectionUI(); pausePoll(1000);
+        }
+        function toggleItemSelection(id, elItem, cb) {
+            if (!selectionEnabled) return;
+            const next = !cb.checked; cb.checked = next; setItemSelected(id, elItem, next);
+        }
+        function clearAllSelections() {
+            if (selectedIds.size === 0) return;
+            document.querySelectorAll('#grid .item[data-selected="true"]').forEach(it => { it.dataset.selected = 'false'; it.setAttribute('aria-selected', 'false'); });
+            document.querySelectorAll('#grid .item input.sel:checked').forEach(cb => cb.checked = false);
+            selectedIds.clear(); syncHeaderSelectionUI(); pausePoll(400);
+        }
+
+        const USE_MOCK = false;
+        const MOCK_DB = Array.from({ length: 12 }, (_, i) => ({ id: `mock-${i + 1}`, name: `mock-${i + 1}.jpg`, url: `https://picsum.photos/seed/mock-${i + 1}/1280/720`, timestamp: new Date().toISOString(), polygon_norm: null, isClassified: false, className: null }));
+        async function getList({ take = TAKE, skip = 0 }) {
+            if (USE_MOCK) { total = MOCK_DB.length; return MOCK_DB.slice(skip, skip + take); }
+
+            const url = `${API}/Anomalias/list?po=${encodeURIComponent(posto)}&folder=${encodeURIComponent(currentFolder)}&skip=${skip}&take=${take}`;
+            const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}`, "Accept": "application/json" } });
+            const ct = resp.headers.get("content-type") || "";
+            if (!resp.ok) {
+                let msg = `HTTP ${resp.status}`;
+                try { const j = await resp.json(); if (j?.message) msg += ` — ${j.message}`; } catch { }
+                throw new Error(msg);
+            }
+            if (!ct.includes("application/json")) throw new Error("Resposta não-JSON");
+
+            const totalHeader = resp.headers.get("X-Total-Count");
+            if (totalHeader != null) {
+                const t = parseInt(totalHeader, 10);
+                if (!Number.isNaN(t)) total = t;
+            }
+
+            const data = await resp.json();
+            return (Array.isArray(data) ? data : []).map((raw, idx) => {
+                const name = raw.name ?? raw.fileName ?? raw.filename ?? raw.Name ?? raw.FileName;
+                const idFromName = raw.id ?? (name ? String(name).replace(/\.[^.]+$/, "") : `${skip + idx + 1}`);
+                const url = raw.url ?? raw.Url ?? raw.URL ?? (name ? `/Vision/${posto}/${currentFolder}/${name}` : null);
+                return {
+                    id: String(idFromName),
+                    name: name || `${idFromName}.jpg`,
+                    url,
+                    timestamp: raw.timestamp || raw.date || null,     // capturada (UTC ISO)
+                    updatedUtc: raw.updatedUtc || null,               // alterada (UTC ISO)
+                    createdUtc: raw.createdUtc || null,               // criado no servidor (UTC ISO) — se quiser usar
+                    polygon_norm: Array.isArray(raw.polygon_norm) ? raw.polygon_norm : null,
+                    isClassified: !!raw.isClassified,
+                    className: raw.className || null,
+                    classId: raw.classId || null
+                };
+            });
+        }
+
+        async function postIgnore(po, names) {
+            const url = `${API}/Anomalias/ignore?po=${encodeURIComponent(po)}`;
+            const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'Accept': 'application/json' }, body: JSON.stringify(names) });
+            const ct = resp.headers.get('content-type') || ''; let payload = null;
+            if (ct.includes('application/json')) { try { payload = await resp.json(); } catch { } } else { try { payload = { message: await resp.text() }; } catch { } }
+            return { ok: resp.ok, status: resp.status, payload };
+        }
+        async function postClassify(po, names, classId, className) {
+            const url = `${API}/Anomalias/classify?po=${encodeURIComponent(po)}`;
+            const body = { names, classId, className };
+            const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'Accept': 'application/json' }, body: JSON.stringify(body) });
+            const ct = resp.headers.get('content-type') || ''; let payload = null;
+            if (ct.includes('application/json')) { try { payload = await resp.json(); } catch { } } else { try { payload = { message: await resp.text() }; } catch { } }
+            return { ok: resp.ok, status: resp.status, payload };
+        }
+
+        function resolveSrc(u) { if (!u) return ''; if (/^(https?:|data:|blob:)/i.test(u)) return u; const needsSlash = u[0] !== '/' && API.slice(-1) !== '/'; return `${API}${needsSlash ? '/' : ''}${u}`; }
+        function addLongPress(el, onLongPress, ms = 550, moveThreshold = 20) {
+            let timer = null, longFired = false, startX = 0, startY = 0, active = false;
+            const start = e => { longFired = false; active = true; if (e.button && e.button !== 0) return; startX = e.clientX ?? 0; startY = e.clientY ?? 0; timer = setTimeout(() => { longFired = true; onLongPress(e); }, ms); interacting = true; };
+            const cancel = () => { active = false; if (timer) { clearTimeout(timer); timer = null; } interacting = false; pausePoll(300); };
+            const move = e => { if (!active || !timer) return; const dx = (e.clientX ?? 0) - startX, dy = (e.clientY ?? 0) - startY; if (Math.hypot(dx, dy) > moveThreshold) cancel(); };
+            const handleClick = e => { if (longFired) { e.preventDefault(); e.stopImmediatePropagation(); longFired = false; } };
+            el.addEventListener('pointerdown', start); el.addEventListener('pointermove', move);
+            el.addEventListener('pointerup', cancel); el.addEventListener('pointerleave', cancel);
+            el.addEventListener('pointercancel', cancel); el.addEventListener('click', handleClick, true);
+        }
+
+        const overlayEl = document.getElementById('overlay');
+        const overlayImg = document.getElementById('overlayImg');
+        const polyOverlay = document.getElementById('polyOverlay');
+        const polyShape = document.getElementById('polyShape');
+        const btnClose = document.getElementById('btnClose');
+        const togglePolyBtn = document.getElementById('togglePoly');
+        const btnModalClassificar = document.getElementById('btnModalClassificar');
+        const btnModalIgnorar = document.getElementById('btnModalIgnorar');
+        const stampEl = document.getElementById('imgTimestamp');
+        const classLine = document.getElementById('classLine');
+        const classText = document.getElementById('imgClass');
+        const updatedLine = document.getElementById('updatedLine');
+        const updatedTimeEl = document.getElementById('imgUpdated');
+
+        let interacting = false, pollPauseUntil = 0;
+
+        function polygonPointsFromNorm(norm) {
+            if (!Array.isArray(norm) || norm.length < 6) return '';
+            const pts = [];
+            for (let i = 0; i < norm.length; i += 2) {
+                let x = norm[i], y = norm[i + 1];
+                if (typeof x !== 'number' || typeof y !== 'number') continue;
+                x = Math.max(0, Math.min(1, x)); y = Math.max(0, Math.min(1, y));
+                pts.push(`${x},${y}`);
+            }
+            return pts.join(' ');
+        }
+        function updatePolyVisibility(visible) {
+            if (visible) { polyOverlay.classList.add('active'); togglePolyBtn.setAttribute('aria-pressed', 'true'); togglePolyBtn.textContent = 'Ocultar contorno'; }
+            else { polyOverlay.classList.remove('active'); togglePolyBtn.setAttribute('aria-pressed', 'false'); togglePolyBtn.textContent = 'Mostrar contorno'; }
+        }
+        function formatTimestamp(ts) {
+            if (!ts) return '';
+            const d = new Date(ts);
+            return new Intl.DateTimeFormat('pt-BR', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                timeZone: TZ
+            }).format(d);
+        }
+
+        function playFadeIn(el) {
+            if (!el) return;
+            el.classList.remove('fade-out');
+            // força reflow pra reiniciar a animação mesmo repetindo classe
+            void el.offsetWidth;
+            el.classList.add('fade-in');
+        }
+
+        function playFadeOut(el, onEnd) {
+            if (!el) { onEnd?.(); return; }
+            el.classList.remove('fade-in');
+            void el.offsetWidth;
+
+            // Se está hidden/display:none, não tente animar: finalize direto
+            const cs = getComputedStyle(el);
+            const notVisible = el.hasAttribute('hidden') || cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0';
+            if (notVisible) { onEnd?.(); return; }
+
+            el.classList.add('fade-out');
+            el.addEventListener('animationend', () => {
+                el.classList.remove('fade-out');
+                onEnd?.();
+            }, { once: true });
+        }
+
+        function openModalWithItem(item) {
+            currentModalItem = item;
+            lastFocusBeforeModal = document.activeElement;
+
+            overlayImg.src = resolveSrc(item.url);
+            overlayImg.alt = 'Imagem anômala';
+
+            // Capturada (sempre a partir de item.timestamp)
+            stampEl.textContent = formatTimestamp(item.timestamp);
+            stampEl.setAttribute('datetime', item.timestamp || '');
+            stampEl.title = item.timestamp || '';
+
+            // Linha de classe: visível somente em "anomalias" e quando existe className
+            const showClass = (currentFolder === 'anomalias') && !!item.className;
+            classLine.dataset.visible = showClass ? 'true' : 'false';
+            classText.textContent = showClass ? `${item.classId} - ${item.className}` : '';
+
+            // Linha "Alterada": visível em "anomalias" e "ignoradas", usando updatedUtc
+            const showUpdated = (currentFolder === 'anomalias' || currentFolder === 'ignoradas') && !!item.updatedUtc;
+            updatedLine.dataset.visible = showUpdated ? 'true' : 'false';
+            if (showUpdated) {
+                updatedTimeEl.textContent = formatTimestamp(item.updatedUtc);
+                updatedTimeEl.setAttribute('datetime', item.updatedUtc);
+                updatedTimeEl.title = item.updatedUtc; // ISO cru (opcional para inspeção)
+            } else {
+                updatedTimeEl.textContent = '';
+                updatedTimeEl.removeAttribute('datetime');
+                updatedTimeEl.removeAttribute('title');
+            }
+
+            // Polígono (não mostrar em ignoradas)
+            const canShowPoly = currentFolder !== 'ignoradas' && Array.isArray(item.polygon_norm) && item.polygon_norm.length >= 6;
+            togglePolyBtn.hidden = !canShowPoly;
+            if (canShowPoly) {
+                polyShape.setAttribute('points', polygonPointsFromNorm(item.polygon_norm));
+                updatePolyVisibility(getPolyPref());
+            } else {
+                polyShape.setAttribute('points', '');
+                updatePolyVisibility(false);
+            }
+
+            // Botões de ação só em "sem_classificacao"
+            const showActions = (currentFolder === 'sem_classificacao');
+            btnModalClassificar.hidden = !showActions;
+            btnModalIgnorar.hidden = !showActions;
+
+            showSection(overlayEl, { focus: btnClose });
+            playFadeIn(overlayEl);
+            modalArmAt = performance.now() + 250;
+            interacting = true;
+        }
+
+        function closeModal() {
+            const finish = () => {
+                hideSection(overlayEl, { focusFallback: lastFocusBeforeModal || document.getElementById('appMain') });
+                overlayImg.src = '';
+                overlayImg.alt = '';
+                polyShape.setAttribute('points', '');
+                interacting = false;
+                pausePoll(400);
+                currentModalItem = null;
+            };
+
+            // Se já está oculto, finalize imediatamente (sem armar listener)
+            if (!isModalOpen()) { finish(); return; }
+
+            // Caso contrário, anima e finaliza no fim
+            playFadeOut(overlayEl, finish);
+        }
+
+        overlayEl.addEventListener('click', e => {
+            if (e.target !== overlayEl) return;
+            if (performance.now() < modalArmAt) {
+                // ainda não “armado”: ignora o clique fantasma
+                e.stopPropagation();
+                return;
+            }
+            closeModal();
+        });
+
+        btnClose.addEventListener('click', closeModal);
+        togglePolyBtn.addEventListener('click', () => { const now = togglePolyBtn.getAttribute('aria-pressed') !== 'true'; updatePolyVisibility(now); setPolyPref(now); });
+
+        function pausePoll(ms = 1000) { pollPauseUntil = performance.now() + ms; }
+        function isModalOpen() { return !overlayEl.hasAttribute('hidden'); }
+        function shouldSkipPoll() {
+            if (loading || posto == null || token == null) return true;
+            if (isModalOpen() || interacting) return true;
+            if (selectionEnabled && selectedIds.size > 0) return true;
+            if (performance.now() < pollPauseUntil) return true;
+            return false;
+        }
+        const gridEl = document.getElementById('grid');
+        gridEl.addEventListener('pointerdown', () => { interacting = true; });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => { window.addEventListener(ev, () => { interacting = false; pausePoll(300); }, { passive: true }); });
+
+        function updateTabsUI() { document.querySelectorAll('#folderTabs .tab').forEach(btn => { btn.setAttribute('aria-selected', btn.dataset.folder === currentFolder ? 'true' : 'false'); }); }
+        function setFolder(folder) {
+            if (currentFolder === folder) return;
+            if (isModalOpen()) closeModal(); // <-- evita pendurar listener
+            clearAllSelections();
+            currentFolder = folder;
+            selectionEnabled = (currentFolder === 'sem_classificacao');
+            updateTabsUI();
+            pageIndex = 0;
+            goToPage(0);
+        }
+
+        function renderImages(items) {
+            const grid = document.getElementById('grid'); grid.innerHTML = "";
+            for (const it of items) {
+                const src = resolveSrc(it.url); const id = String(it.id); const name = String(it.name || `${it.id}.jpg`);
+                const item = document.createElement('div'); item.dataset.name = name; item.className = 'item'; item.dataset.id = id;
+                const isSel = selectionEnabled && selectedIds.has(id);
+                item.dataset.selected = isSel ? 'true' : 'false'; item.setAttribute('aria-selected', item.dataset.selected);
+
+                const img = document.createElement('img'); img.className = 'thumb'; img.src = src; img.draggable = false; img.loading = 'lazy'; img.alt = 'Imagem anômala';
+                img.addEventListener('click', e => {
+                    if (selectionEnabled && selectedIds.size > 0) {
+                        e.preventDefault(); e.stopPropagation();
+                        const cb = item.querySelector('input.sel'); if (cb) toggleItemSelection(id, item, cb);
+                    } else {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openModalWithItem(it);
+                    }
+                });
+                img.addEventListener('contextmenu', e => e.preventDefault());
+
+                if (selectionEnabled) {
+                    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'sel'; cb.checked = isSel; cb.setAttribute('aria-label', 'Selecionar imagem');
+                    cb.addEventListener('click', e => e.stopPropagation());
+                    cb.addEventListener('change', () => setItemSelected(id, item, cb.checked));
+                    if (IS_TOUCH) { addLongPress(img, () => { const next = !selectedIds.has(id); setItemSelected(id, item, next); cb.checked = next; }); }
+                    item.appendChild(cb);
+                }
+
+                item.appendChild(img); grid.appendChild(item);
+            }
+            if (!selectionEnabled && selectedIds.size > 0) clearAllSelections();
+            syncHeaderSelectionUI();
+        }
+
+        function renderPagerInfo() {
+            const info = document.getElementById("info");
+            totalPg = Math.max(1, Math.ceil(total / TAKE));
+            const humanPage = Math.min(pageIndex + 1, totalPg);
+            info.textContent = `${total} Imagens\u00A0\u00A0—\u00A0\u00A0Página ${humanPage} de ${totalPg}`;
+            document.getElementById("btnPrev").disabled = pageIndex <= 0;
+            document.getElementById("btnNext").disabled = pageIndex >= totalPg - 1;
+        }
+
+        async function goToPage(p) {
+            if (loading) return;
+            totalPg = Math.max(1, Math.ceil(total / TAKE));
+            if (p < 0) p = 0; if (p > totalPg - 1) p = totalPg - 1;
+            loading = true; pageIndex = p;
+            try {
+                const skip = pageIndex * TAKE;
+                const items = await getList({ take: TAKE, skip });
+                renderImages(items); renderPagerInfo(); pausePoll(200);
+            } catch (err) { console.error("Erro ao carregar página:", err); }
+            finally { loading = false; }
+        }
+
+        async function pollCurrentPage() {
+            if (shouldSkipPoll()) return;
+            try {
+                const skip = pageIndex * TAKE;
+                const items = await getList({ take: TAKE, skip });
+                if (shouldSkipPoll()) return;
+                renderImages(items); renderPagerInfo();
+            } catch (err) { console.warn("Falha ao atualizar periodicamente:", err?.message || err); }
+        }
+
+        const confirmOverlay = document.getElementById('confirmOverlay');
+        const confirmCountEl = document.getElementById('confirmCount');
+        const confirmMsgEl = document.getElementById('confirmMsg');
+        const confirmProgressEl = document.getElementById('confirmProgress');
+        const btnCancelIgnore = document.getElementById('btnCancelIgnore');
+        const btnConfirmIgnore = document.getElementById('btnConfirmIgnore');
+        let confirmAutoCloseTimer = null, lastFocusBeforeConfirm = null, pendingNamesForIgnore = null;
+
+        function getSelectedNames() { const names = []; document.querySelectorAll('#grid .item[data-selected="true"]').forEach(it => { const name = it.dataset.name; if (name) names.push(name); }); return names; }
+        function openConfirmIgnore(namesOverride = null) {
+            pendingNamesForIgnore = (Array.isArray(namesOverride) && namesOverride.length) ? namesOverride : null;
+            const count = pendingNamesForIgnore ? pendingNamesForIgnore.length : selectedIds.size;
+
+            lastFocusBeforeConfirm = document.activeElement;
+            confirmCountEl.textContent = String(count);
+            confirmMsgEl.hidden = false; confirmProgressEl.hidden = true; confirmProgressEl.textContent = '';
+            btnCancelIgnore.disabled = false; btnConfirmIgnore.disabled = false;
+
+            showSection(confirmOverlay, { focus: btnConfirmIgnore });
+            playFadeIn(confirmOverlay);
+            interacting = true; pausePoll(1000);
+        }
+        function closeConfirmIgnore() {
+            if (confirmAutoCloseTimer) { clearTimeout(confirmAutoCloseTimer); confirmAutoCloseTimer = null; }
+            playFadeOut(confirmOverlay, () => {  // [FADE] saída
+                hideSection(confirmOverlay, { focusFallback: lastFocusBeforeConfirm || document.getElementById('appMain') });
+                interacting = false; pausePoll(400); pendingNamesForIgnore = null;
+            });
+        }
+        async function confirmIgnoreAction() {
+            btnCancelIgnore.disabled = true; btnConfirmIgnore.disabled = true;
+            const prevTxt = btnConfirmIgnore.textContent;
+
+            const names = pendingNamesForIgnore || getSelectedNames();
+            confirmMsgEl.hidden = true; confirmProgressEl.textContent = `Ignorando ${names.length} imagem(ns)...`; confirmProgressEl.hidden = false;
+            if (names.length === 0) { confirmProgressEl.textContent = 'Nenhuma imagem selecionada.'; btnConfirmIgnore.textContent = prevTxt; confirmAutoCloseTimer = setTimeout(() => closeConfirmIgnore(), 1000); return; }
+
+            try {
+                const { ok, payload, status } = await postIgnore(posto, names);
+                if (!ok) {
+                    const msg = (payload && payload.message) ? payload.message : `Falha HTTP ${status}`;
+                    confirmProgressEl.textContent = `Erro ao ignorar: ${msg}`;
+                    btnCancelIgnore.disabled = false; btnConfirmIgnore.disabled = false; btnConfirmIgnore.textContent = prevTxt; confirmMsgEl.hidden = false; return;
+                }
+                const moved = payload?.moved ?? names.length, notFound = payload?.notFound ?? 0, notInSem = payload?.notInSemClassificacao ?? 0, errors = payload?.errors ?? 0;
+                confirmProgressEl.textContent = (moved === names.length && !notFound && !notInSem && !errors)
+                    ? `✅ ${moved} imagem${moved > 1 ? "s" : ""} ignorada${moved > 1 ? "s" : ""} com sucesso.`
+                    : `⚠️ ${moved} imagem${moved > 1 ? "s" : ""} ignorada${moved > 1 ? "s" : ""}, mas ${notFound + notInSem + errors} não foram processadas.`;
+
+                clearAllSelections(); try { await goToPage(pageIndex); } catch { }
+                if (currentModalItem) closeModal();
+                confirmAutoCloseTimer = setTimeout(() => closeConfirmIgnore(), 1200);
+            } catch (err) {
+                console.error('[IGNORAR] erro:', err);
+                confirmProgressEl.textContent = `Erro ao ignorar: ${err?.message || 'falha desconhecida'}`;
+                btnCancelIgnore.disabled = false; btnConfirmIgnore.disabled = false; btnConfirmIgnore.textContent = 'Tentar novamente'; confirmMsgEl.hidden = false;
+            } finally {
+                if (!btnConfirmIgnore.disabled) btnConfirmIgnore.textContent = 'Confirmar';
+            }
+        }
+        confirmOverlay.addEventListener('click', (e) => { if (e.target === confirmOverlay) closeConfirmIgnore(); });
+        btnCancelIgnore.addEventListener('click', closeConfirmIgnore);
+        btnConfirmIgnore.addEventListener('click', confirmIgnoreAction);
+
+        const classifyOverlay = document.getElementById('classifyOverlay');
+        const classifyMsgEl = document.getElementById('classifyMsg');
+        const classifyProgressEl = document.getElementById('classifyProgress');
+        const classSelect = document.getElementById('classSelect');
+        const btnCancelClassify = document.getElementById('btnCancelClassify');
+        const btnConfirmClassify = document.getElementById('btnConfirmClassify');
+        let classifyAutoCloseTimer = null, lastFocusBeforeClassify = null, pendingNamesForClassify = null;
+
+        function openClassify(namesOverride = null) {
+            pendingNamesForClassify = (Array.isArray(namesOverride) && namesOverride.length) ? namesOverride : null;
+            lastFocusBeforeClassify = document.activeElement;
+            classifyMsgEl.hidden = false; classifyProgressEl.hidden = true; classifyProgressEl.textContent = '';
+            btnCancelClassify.disabled = false; btnConfirmClassify.disabled = false;
+
+            showSection(classifyOverlay, { focus: btnConfirmClassify });
+            playFadeIn(classifyOverlay);
+            interacting = true; pausePoll(1000);
+        }
+        function closeClassify() {
+            if (classifyAutoCloseTimer) { clearTimeout(classifyAutoCloseTimer); classifyAutoCloseTimer = null; }
+            playFadeOut(classifyOverlay, () => { // [FADE] saída
+                hideSection(classifyOverlay, { focusFallback: lastFocusBeforeClassify || document.getElementById('appMain') });
+                interacting = false; pausePoll(400); pendingNamesForClassify = null;
+            });
+        }
+        async function confirmClassifyAction() {
+            btnCancelClassify.disabled = true; btnConfirmClassify.disabled = true;
+            const prevTxt = btnConfirmClassify.textContent;
+
+            const names = pendingNamesForClassify || getSelectedNames();
+            classifyMsgEl.hidden = true; classifyProgressEl.textContent = `Classificando ${names.length} imagem(ns)...`; classifyProgressEl.hidden = false;
+            if (names.length === 0) { classifyProgressEl.textContent = 'Nenhuma imagem selecionada.'; btnConfirmClassify.textContent = prevTxt; classifyAutoCloseTimer = setTimeout(() => closeClassify(), 1000); return; }
+
+            const classId = parseInt(classSelect.value, 10);
+            const className = classSelect.options[classSelect.selectedIndex].dataset.name || 'mancha';
+
+            try {
+                const { ok, payload, status } = await postClassify(posto, names, classId, className);
+                if (!ok) {
+                    const msg = (payload && payload.message) ? payload.message : `Falha HTTP ${status}`;
+                    classifyProgressEl.textContent = `Erro ao classificar: ${msg}`;
+                    btnCancelClassify.disabled = false; btnConfirmClassify.disabled = false; btnConfirmClassify.textContent = prevTxt; classifyMsgEl.hidden = false; return;
+                }
+
+                const moved = payload?.moved ?? names.length, notFound = payload?.notFound ?? 0, notInSem = payload?.notInSemClassificacao ?? 0, errors = payload?.errors ?? 0;
+                classifyProgressEl.textContent = (moved === names.length && !notFound && !notInSem && !errors)
+                    ? `✅ ${moved} imagem${moved > 1 ? "s" : ""} classificada${moved > 1 ? "s" : ""} como “${className}”.`
+                    : `⚠️ ${moved} imagem${moved > 1 ? "s" : ""} classificada${moved > 1 ? "s" : ""}, mas ${notFound + notInSem + errors} não foram processadas.`;
+
+                clearAllSelections(); try { await goToPage(pageIndex); } catch { }
+                if (currentModalItem) closeModal();
+                classifyAutoCloseTimer = setTimeout(() => closeClassify(), 1200);
+            } catch (err) {
+                console.error('[CLASSIFICAR] erro:', err);
+                classifyProgressEl.textContent = `Erro ao classificar: ${err?.message || 'falha desconhecida'}`;
+                btnCancelClassify.disabled = false; btnConfirmClassify.disabled = false; btnConfirmClassify.textContent = 'Tentar novamente'; classifyMsgEl.hidden = false;
+            } finally {
+                if (!btnConfirmClassify.disabled) btnConfirmClassify.textContent = 'Confirmar';
+            }
+        }
+        classifyOverlay.addEventListener('click', (e) => { if (e.target === classifyOverlay) closeClassify(); });
+        btnCancelClassify.addEventListener('click', closeClassify);
+        btnConfirmClassify.addEventListener('click', confirmClassifyAction);
+
+        btnModalClassificar.addEventListener('click', () => { if (!currentModalItem) return; openClassify([currentModalItem.name]); });
+        btnModalIgnorar.addEventListener('click', () => { if (!currentModalItem) return; openConfirmIgnore([currentModalItem.name]); });
+
+        function wireHeaderControls() {
+            document.getElementById("btnPrev").addEventListener("click", () => goToPage(pageIndex - 1));
+            document.getElementById("btnNext").addEventListener("click", () => goToPage(pageIndex + 1));
+            document.getElementById('btnClearSel').addEventListener('click', clearAllSelections);
+            document.getElementById('btnClassificar').addEventListener('click', () => { if (!selectionEnabled) return; if (selectedIds.size === 0) return; openClassify(); });
+            document.getElementById('btnIgnorar').addEventListener('click', () => { if (!selectionEnabled) return; if (selectedIds.size === 0) return; openConfirmIgnore(); });
+        }
+        function wireTabs() {
+            document.getElementById('tabSem').addEventListener('click', () => setFolder('sem_classificacao'));
+            document.getElementById('tabAno').addEventListener('click', () => setFolder('anomalias'));
+            document.getElementById('tabIgn').addEventListener('click', () => setFolder('ignoradas'));
+        }
+
+        function waitForCreds() {
+            return new Promise(resolve => {
+                function handler(evt) {
+                    const msg = evt.data || {};
+                    if (msg.type === "data" && msg.payload) {
+                        removeEventListener("message", handler);
+                        const { po, jwt } = msg.payload;
+                        posto = po;
+                        token = jwt;
+                        resolve({ po, jwt });
+                    }
+                }
+                addEventListener("message", handler);
+                parent.postMessage({ type: "get-data" }, "*");
+            });
+        }
+
+        (async function init() {
+            // await waitForCreds();
+            posto = 1;
+            token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpbiI6ImFkbWluIiwic2VuaGEiOiIxNjFlYmQ3ZDQ1MDg5YjM0NDZlZTRlMGQ4NmRiY2Y5MiIsImNsaWVudGUiOiIxMDAwIiwiZXhwIjoxNzU2NzM3MjgwLCJpc3MiOiJ3ZWJhcGkiLCJhdWQiOiJ3ZWJhcGkifQ.Mwn-Mzam0Nmxzxr-HH9_0a0JSNeX4uX-8KiEig8_3HI'
+
+            wireHeaderControls();
+            wireTabs();
+            updateTabsUI();
+
+            await goToPage(0);
+            setInterval(pollCurrentPage, POLL_MS);
+        })();
+    </script>
+</body>
+
+</html>
