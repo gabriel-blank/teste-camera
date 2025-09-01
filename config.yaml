@@ -1,10 +1,6 @@
 cameras:
   - po: 1
     url: video/video_tear.mp4
-  - po: 2
-    url: video/video_tear.mp4
-  - po: 3
-    url: video/video_tear.mp4
     
 api: 
   url: http://localhost:5000
