@@ -180,7 +180,7 @@ def run_inference(
         pass
 
     # ---------- Stream e estado ----------
-    stream = BufferedVideoStream(cam_url, start_paused=True)
+    stream = BufferedVideoStream(backend="mvsdk", start_paused=True)
     watcher = StateWatcher(api, po, interval=3.0)
     stream.start()
     watcher.start()
@@ -412,17 +412,17 @@ def run_inference(
                             ok, enc_jpg = cv2.imencode(
                                 ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80]
                             )
-                            if ok:
-                                _ = api.send_frame(
-                                    files={
-                                        "imagem": (
-                                            "frame.jpg",
-                                            enc_jpg.tobytes(),
-                                            "image/jpeg",
-                                        )
-                                    },
-                                    data=payload,
-                                )
+                            # if ok:
+                            #     _ = api.send_frame(
+                            #         files={
+                            #             "imagem": (
+                            #                 "frame.jpg",
+                            #                 enc_jpg.tobytes(),
+                            #                 "image/jpeg",
+                            #             )
+                            #         },
+                            #         data=payload,
+                            #     )
                             t_api_1 = time.perf_counter()
                             api_ms = (t_api_1 - t_api_0) * 1000.0
 
