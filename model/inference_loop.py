@@ -458,8 +458,6 @@ def run_inference(
                     )
                     class_ms = (
                         (t_class_1 - t_class_0) * 1000.0
-                        if pred_class_id is not None
-                        else 0.0
                     )
                     total_ms = (t_total_1 - t_total_0) * 1000.0
 
