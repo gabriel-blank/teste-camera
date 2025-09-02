@@ -180,7 +180,7 @@ def run_inference(
         pass
 
     # ---------- Stream e estado ----------
-    stream = BufferedVideoStream(backend="mvsdk", start_paused=True)
+    stream = BufferedVideoStream(backend="opencv", source=cam_url, start_paused=True)
     watcher = StateWatcher(api, po, interval=3.0)
     stream.start()
     watcher.start()
@@ -292,33 +292,6 @@ def run_inference(
                     frame = stream.read(timeout=0.2)
                     t_read_1 = time.perf_counter()
                     if frame is None:
-                        # sempre logamos; sem frame, métricas abaixo vão refletir 0 nos passos seguintes
-                        frame_rgb = None
-                        predictions = []
-                        poly_norm = None
-                        pred_class_id = None
-                        pred_class_name = None
-                        pred_confidence = None
-                        score = None
-                        last_anomaly_map = None
-
-                        # métricas “zeradas” (menos read_ms)
-                        t_total_1 = time.perf_counter()
-                        read_ms = (t_read_1 - t_read_0) * 1000.0
-                        pre_ms = 0.0
-                        anom_ms = 0.0
-                        post_ms = 0.0
-                        class_ms = 0.0
-                        api_ms = 0.0
-                        total_ms = (t_total_1 - t_total_0) * 1000.0
-
-                        logger.info(
-                            (
-                                f"[PO {po}] | total={total_ms:.2f}ms read={read_ms:.2f}ms "
-                                f"preprocess={pre_ms:.2f}ms anomaly_inf={anom_ms:.2f}ms "
-                                f"post_process={post_ms:.2f}ms class_inf={class_ms:.2f}ms api={api_ms:.2f}ms"
-                            )
-                        )
                         continue
 
                     # 2) preprocess
@@ -386,6 +359,7 @@ def run_inference(
                                 # guardamos só o que vamos enviar
                                 pred_class_name = cls_name
                                 pred_confidence = conf
+                                pred_class_id = cls_id
                             except Exception as e:
                                 logger.error(
                                     f"[PO {po}] erro na classificação SVM: {e}"
@@ -397,7 +371,9 @@ def run_inference(
                             payload = {
                                 "po": po,
                                 "score_global": score,  # a API converte para anomalyScore
-                                "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+                                "timestamp": datetime.now(timezone.utc)
+                                .isoformat(timespec="milliseconds")
+                                .replace("+00:00", "Z"),
                                 "polygon_norm": json.dumps(poly_norm),
                             }
                             # adiciona os novos campos apenas se existirem
@@ -456,9 +432,7 @@ def run_inference(
                     post_ms = (
                         (t_post_1 - t_post_0) * 1000.0 if poly_norm is not None else 0.0
                     )
-                    class_ms = (
-                        (t_class_1 - t_class_0) * 1000.0
-                    )
+                    class_ms = (t_class_1 - t_class_0) * 1000.0
                     total_ms = (t_total_1 - t_total_0) * 1000.0
 
                     logger.info(
